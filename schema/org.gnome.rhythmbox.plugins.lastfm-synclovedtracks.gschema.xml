@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.rhythmbox.plugins.lastfm-synclovedtracks" path="/org/gnome/rhythmbox/plugins/lastfm-synclovedtracks/">
+    <key type="s" name="lastfm-user-name">
+      <default>''</default>
+      <summary>Last.fm user name</summary>
+      <description>The user name to use for Last.fm lookups.</description>
+    </key>
+    <key type="b" name="remove-five-star-ratings">
+      <default>false</default>
+      <summary>Remove five star ratings before updating the local database</summary>
+      <description>If activated, the plugin will remove all five star ratings from the local database before updating from Last.fm.</description>
+    </key>
+  </schema>
+</schemalist>
