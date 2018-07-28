@@ -19,7 +19,7 @@ The menu entry 'Import loved tracks from last.fm' will be added to the Rhythmbox
 
 ![Import loved tracks from last.fm](https://user-images.githubusercontent.com/156340/43361260-a6f6b2cc-92ca-11e8-8bf6-24ec24caa250.png)
 
-All the loved songs from last.fm should have in Rhythmbox now a rating with 5 stars (if the song exists in your Rhythbmox library)
+All the loved songs from last.fm should have in Rhythmbox now a rating of 5 stars (if the song exists in your Rhythbmox Music library)
 
 ## INSTALLATION
 Execute the install script in the plugin directory:
