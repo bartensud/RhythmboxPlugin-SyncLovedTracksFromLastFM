@@ -13,7 +13,7 @@ By Thomas Bartensud et al.
 ## USAGE
 Ensure that the plugin is enabled in Rhythmbox menu 'plugins' and configure the Last.fm user name in the plugin's configuration dialog:
 
-![Configure last.fm username](https://user-images.githubusercontent.com/156340/43361251-5d0269d6-92ca-11e8-92eb-8396e31cccb5.png)
+![Configure last.fm username](https://user-images.githubusercontent.com/156340/43361375-4da23d92-92cd-11e8-9714-387e999bfe37.png)
 
 The menu entry 'Import loved tracks from last.fm' will be added to the Rhythmbox 'Tools' menu. Activate the menu entry to start the import process:
 
