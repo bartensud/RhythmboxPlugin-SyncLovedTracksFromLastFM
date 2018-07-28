@@ -57,18 +57,11 @@ Tested with:
 
 
 ## TODO
-- fix the plugin name in this file and correct the description.
-- code cleanup (commented code, unnecessary empty lines, obsolete debug statements)
-- get a "real" last.fm api key?
-- localization
 - indicate import progress/status
 - display some kind of summary of the import or errors (if the configured user doesn't exist for example)
 - user name validation in the config dialog
 - async processing of the last.fm response
-
-
-## DONE
-- add configuration dialog for last.fm username.
+- localization
 
 
 ## LICENSE
