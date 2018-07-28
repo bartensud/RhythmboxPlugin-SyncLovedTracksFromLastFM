@@ -11,12 +11,15 @@ By Thomas Bartensud et al.
 
 
 ## USAGE
-Ensure that the plugin is enabled in Rhythmbox menu 'plugins' and configure the Last.fm user name in the plugin's configuration dialog.
+Ensure that the plugin is enabled in Rhythmbox menu 'plugins' and configure the Last.fm user name in the plugin's configuration dialog:
 
-The menu entry 'Import loved tracks from last.fm' will be added to the Rhythmbox 'Tools' menu. Activate the menu entry to start the import process.
+![Configure last.fm username](https://user-images.githubusercontent.com/156340/43361251-5d0269d6-92ca-11e8-92eb-8396e31cccb5.png)
 
+The menu entry 'Import loved tracks from last.fm' will be added to the Rhythmbox 'Tools' menu. Activate the menu entry to start the import process:
 
+![Import loved tracks from last.fm](https://user-images.githubusercontent.com/156340/43361260-a6f6b2cc-92ca-11e8-8bf6-24ec24caa250.png)
 
+All the loved songs from last.fm should have in Rhythmbox now a rating with 5 stars (if the song exists in your Rhythbmox library)
 
 ## INSTALLATION
 Execute the install script in the plugin directory:
