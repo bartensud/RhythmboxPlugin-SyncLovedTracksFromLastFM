@@ -14,15 +14,18 @@ import urllib.error
 class LastFM:
     """A class for providing a user's loved tracks at last.fm"""
     apiKey = "c0b0c4e03c75ff9c09a87aecf3d7a731"  # for last.fm app: LovedSongsImporter
-    trackLimit = 1000
-    __urlTemplate = "http://ws.audioscrobbler.com/2.0/?method=user.getlovedtracks&user=%s&api_key=%s&limit=%d"
+    trackLimit = 1000 # supported values by API: 1-1000
+    __urlTemplate = "http://ws.audioscrobbler.com/2.0/?method=user.getlovedtracks&user=%s&api_key=%s&limit=%d&page=%d"
 
     def __init__(self, apiKey=None):
         if apiKey is not None:
             self.apiKey = apiKey
 
+    def buildLovedTracksUrl(self, user, page=1):
+        return self.__urlTemplate % (user, self.apiKey, self.trackLimit, page)
+
     def getLovedTracksByUser(self, user):
-        url = self.__urlTemplate % (user, self.apiKey, self.trackLimit)
+        url = self.buildLovedTracksUrl(user)
         return self.__getLovedTracksByUrl(url)
 
 
@@ -63,6 +66,22 @@ class LastFM:
 
         return self.__getLovedTracksByDOM(dom)
 
+    def getLovedTracksByUrlData(self, urlData):
+        try:
+            dom = xml.dom.minidom.parseString(urlData)
+        except Exception as inst:
+            print(type(inst))    # the exception instance
+            print(inst.args)     # arguments stored in .args
+            print(inst)          # __str__ allows args to be printed directly,        except Exception as e:
+            raise
+        except:
+            print("Unexpected error:", sys.exc_info()[0])
+            raise
+        else:
+            # everything is fine
+            pass
+
+        return self.__getLovedTracksByDOM(dom)
 
     def __getLovedTracksByDOM(self, dom):
         lovedTracks = []

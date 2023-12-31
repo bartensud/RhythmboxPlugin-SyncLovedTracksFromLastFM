@@ -2,8 +2,9 @@
 Loader=python3
 Module=lastfm-synclovedtracks
 IAge=2
+Depends=rb
 Name=Synchronize loved tracks from last.fm to Rhythmbox
 Description=All loved tracks of a user at last.fm will be marked in Rhythmbox DB with 5 stars. See under menu 'Tools'.
 Authors=Thomas Bartensud et al.
-Copyright=Copyright © 2010-2018 Thomas Bartensud et al.
+Copyright=Copyright © 2010-2023 Thomas Bartensud et al.
 Website=https://github.com/bartensud/RhythmboxPlugin-SyncLovedTracksFromLastFM
