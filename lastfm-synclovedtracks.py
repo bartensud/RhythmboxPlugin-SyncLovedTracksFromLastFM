@@ -53,6 +53,8 @@ class LastfmSyncLovedTracksPlugin(GObject.Object, Peas.Activatable):
         app.remove_plugin_menu_item("tools", "lastfm-importlovedtracks")
         app.remove_action("lastfm-importlovedtracks")
 
+        self._lastfm = None
+
     def on_lastfm_user_name_changed(self, settings, key):
         self.action.set_enabled(settings['lastfm-user-name'])
 
