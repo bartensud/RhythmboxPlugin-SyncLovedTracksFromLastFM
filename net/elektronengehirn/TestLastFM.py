@@ -10,9 +10,8 @@ class  TestLastFM(unittest.TestCase):
         self.lfm.dispose()
         self.lfm = None
     '''
-    def testLastFMWithUserBartensud(self):
+    def testLastFMByUserWithUserBartensud(self):
         lfm = LastFM()
-        #lfm = self.lfm
         tracks = lfm.getLovedTracksByUser('bartensud')
         self.assertTrue(tracks is not None)
         #print("Tracks: %s" % tracks)
@@ -29,15 +28,39 @@ class  TestLastFM(unittest.TestCase):
                 minExpectedTrackFound = True
         self.assertTrue(minExpectedTrackFound)
 
-    def testLastFMWithTrackLimit1(self):
+    def testLastFMByUserWithUserBartensudTrackLimit1(self):
+        expectedTracks = 2
         trackLimit = 1
         lfm = LastFM()
         lfm.trackLimit = trackLimit
         tracks = lfm.getLovedTracksByUser('bartensud')
         self.assertEqual(trackLimit, lfm.trackLimit)
-        self.assertEqual(trackLimit, len(tracks))
+        self.assertEqual(expectedTracks, len(tracks))
 
-    def testLastFMWithNonexistingUser(self):
+    def testLastFMByUrlWithUserRJTrackLimit1Page1(self):
+        expectedTrackList = [{'artist': 'The Black Seeds', 'name': "Fire"}]  # pre-req: latest loved track from 4-APR-2016
+        user = "rj"  # user from API Doc (has badge 'ALUM' - retired!?)
+        trackLimit = 1
+        lfm = LastFM()
+        lfm.trackLimit = trackLimit
+        url = lfm.buildLovedTracksUrl(user, 1)
+        tracks = lfm.getLovedTracksByUrl(url)
+        self.assertEqual(trackLimit, lfm.trackLimit)
+        self.assertEqual(len(expectedTrackList), len(tracks))
+        self.assertEqual(expectedTrackList, tracks)
+    def testLastFMByUrlWithUserRJTrackLimit1Page2(self):
+        expectedTrackList = [{'artist': 'Gramatik', 'name': "Just Jammin'"}]  # pre-req: latest loved track from 4-APR-2016
+        user = "rj"  # user from API Doc (has badge 'ALUM' - retired!?)
+        trackLimit = 1
+        lfm = LastFM()
+        lfm.trackLimit = trackLimit
+        url = lfm.buildLovedTracksUrl(user, 2)
+        tracks = lfm.getLovedTracksByUrl(url)
+        self.assertEqual(trackLimit, lfm.trackLimit)
+        self.assertEqual(len(expectedTrackList), len(tracks))
+        self.assertEqual(expectedTrackList, tracks)
+
+    def testLastFMByUserWithNonexistingUser(self):
         nonExistingUser = 'zonUsersa09jf22dsa4a'
         #nonExistingUser = 'bartensud'
         lfm = LastFM()

@@ -22,15 +22,40 @@ class LastFM:
             self.apiKey = apiKey
 
     def buildLovedTracksUrl(self, user, page=1):
+        """
+        Builds API URL for accessing loved tracks
+        :param user: last.fm username
+        :param page: starts with 1. last.fm has a limit of 1000 tracks per API call.
+        :return: URL for accessing loved tracks
+        """
         return self.__urlTemplate % (user, self.apiKey, self.trackLimit, page)
 
     def getLovedTracksByUser(self, user):
-        url = self.buildLovedTracksUrl(user)
-        return self.__getLovedTracksByUrl(url)
+        """
+        Returns loved tracks by last.fm user
+        Note: paging is automatically done in case there are more loved tracks than the track limit per API call
+        :param user: last.fm username
+        :return: List of loved tracks (with properties 'artist' and 'name' per track)
+        """
+        tracks_all = []
+        page = 0
+        more_pages = True
+        while more_pages == True:
+            page += 1
+            url = self.buildLovedTracksUrl(user, page)
+            tracks = self.getLovedTracksByUrl(url)
+            tracks_all.extend(tracks)
+            more_pages = len(tracks) == self.trackLimit
 
+        return tracks_all
 
-
-    def __getLovedTracksByUrl(self, url):
+    def getLovedTracksByUrl(self, url):
+        """
+        Returns loved tracks via last.fm API call by URL.
+        Note: for paging several URLs must be called with according parameter 'page'!
+        :param url: URL for last.fm API
+        :return: List of loved tracks (with properties 'artist' and 'name' per track)
+        """
         print("HTTP GET %s" % url)
         req = urllib.request.Request(url)
         try:
