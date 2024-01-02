@@ -13,13 +13,19 @@ import urllib.error
 
 class LastFM:
     """A class for providing a user's loved tracks at last.fm"""
+    verbose: bool = False
     apiKey = "c0b0c4e03c75ff9c09a87aecf3d7a731"  # for last.fm app: LovedSongsImporter
     trackLimit = 1000 # supported values by API: 1-1000
-    __urlTemplate = "http://ws.audioscrobbler.com/2.0/?method=user.getlovedtracks&user=%s&api_key=%s&limit=%d&page=%d"
+    _urlTemplate = "http://ws.audioscrobbler.com/2.0/?method=user.getlovedtracks&user=%s&api_key=%s&limit=%d&page=%d"
 
-    def __init__(self, apiKey=None):
+
+    def __init__(self, apiKey=None, trackLimit=None, verbose: bool = None):
         if apiKey is not None:
             self.apiKey = apiKey
+        if trackLimit is not None:
+            self.trackLimit = trackLimit
+        if verbose is not None:
+            self.verbose = verbose
 
     def buildLovedTracksUrl(self, user, page=1):
         """
@@ -28,7 +34,7 @@ class LastFM:
         :param page: starts with 1. last.fm has a limit of 1000 tracks per API call.
         :return: URL for accessing loved tracks
         """
-        return self.__urlTemplate % (user, self.apiKey, self.trackLimit, page)
+        return self._urlTemplate % (user, self.apiKey, self.trackLimit, page)
 
     def getLovedTracksByUser(self, user):
         """
@@ -42,10 +48,10 @@ class LastFM:
         more_pages = True
         while more_pages == True:
             page += 1
-            url = self.buildLovedTracksUrl(user, page)
-            tracks = self.getLovedTracksByUrl(url)
-            tracks_all.extend(tracks)
-            more_pages = len(tracks) == self.trackLimit
+            _url = self.buildLovedTracksUrl(user, page)
+            _tracks = self.getLovedTracksByUrl(_url)
+            tracks_all.extend(_tracks)
+            more_pages = len(_tracks) == self.trackLimit
 
         return tracks_all
 
@@ -62,7 +68,7 @@ class LastFM:
             resp = urllib.request.urlopen(req)
             dom = xml.dom.minidom.parse(resp)
         except urllib.error.HTTPError as e:
-            print('The server couldn\'t fulfill the request.')
+            print('The server could not fulfill the request.')
             print('Error code: ', e.code)
             print('Reason: ', e.reason)
             try:
@@ -129,7 +135,10 @@ class LastFM:
             lovedTracks.append({'artist': artist, 'name': name})
             #print("%s: %s" % (artist, name))
 
-        print('loved tracks at last.fm: %s' % lovedTracks)
+        if self.verbose:
+            print("last.fm returned %d loved tracks: %s" % (len(lovedTracks), lovedTracks))
+        else:
+            print("last.fm returned %d loved tracks" % (len(lovedTracks)))
         return lovedTracks
 
     def __getText(self, nodelist):
@@ -156,4 +165,3 @@ if __name__ == "__main__":
     tracks = lfm.getLovedTracksByUser('bartensud')
     for track in tracks:
         print(track)
-

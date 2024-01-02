@@ -11,7 +11,10 @@ gettext.install('rhythmbox', RB.locale_dir())
 class LastfmSyncLovedTracksPlugin(GObject.Object, Peas.Activatable):
     __gtype_name = 'LastfmSyncLovedTracksPlugin'
     object = GObject.property(type=GObject.GObject)
+    verbose = False
     _lastfm = None
+    _lovedTracks = None
+    _page = 0
 
     def __init__(self):
         GObject.Object.__init__(self)
@@ -43,6 +46,10 @@ class LastfmSyncLovedTracksPlugin(GObject.Object, Peas.Activatable):
                 detailed_action="app.lastfm-importlovedtracks"
             )
         )
+
+        self._lovedTracks = []
+        self._page = 0
+
     
     def do_deactivate(self):
         print("deactivating python plugin: rb-lastfm-synclovedtracks")
@@ -54,16 +61,21 @@ class LastfmSyncLovedTracksPlugin(GObject.Object, Peas.Activatable):
         app.remove_action("lastfm-importlovedtracks")
 
         self._lastfm = None
+        self._lovedTracks = None
 
     def on_lastfm_user_name_changed(self, settings, key):
         self.action.set_enabled(settings['lastfm-user-name'])
 
     def get_lastfm_instance(self):
         if not self._lastfm:
-            self._lastfm = LastFM()
+            self._lastfm = LastFM(verbose=self.verbose)
         return self._lastfm
 
     def execute(self, action, parameter, shell):
+        if (len(self._lovedTracks) > 0) or (self._page != 0):
+            print("WARNING: Synchronization of loved tracks from last.fm started but there seem still not properlay finished items. User might have started quickly several times or there's a bug...")
+        self._lovedTracks = []
+        self._page = 0
         if self.settings['lastfm-user-name']:
             if self.settings['remove-five-star-ratings']:
                 self.removeRBRatings(5)
@@ -72,7 +84,8 @@ class LastfmSyncLovedTracksPlugin(GObject.Object, Peas.Activatable):
 
     def import_lovedtracks(self):
         lfm = self.get_lastfm_instance()
-        url = lfm.buildLovedTracksUrl(self.settings['lastfm-user-name'])
+        self._page += 1
+        url = lfm.buildLovedTracksUrl(self.settings['lastfm-user-name'], self._page)
         loader = rb.Loader()
         print("URL to fetch loved tracks: %s" % (url) )
         loader.get_url(url, self.import_lovedtracks_mycallback)
@@ -83,27 +96,41 @@ class LastfmSyncLovedTracksPlugin(GObject.Object, Peas.Activatable):
             #self.search_next()
             return
 
-        try:
-            n = min(150, len(data_bytes)) # Ensure n is not greater than the length of the bytes object
-            dataStr = data_bytes[:n].decode('utf-8') # Decode the first n entries of the bytes object to a string
-            print("last.fm returned data (first %d chars): %s..." % (n, dataStr))
-        except:
-            print("Unexpected error:", sys.exc_info()[0])
+        if self.verbose:
+            try:
+                n = min(150, len(data_bytes)) # Ensure n is not greater than the length of the bytes object
+                dataStr = data_bytes[:n].decode('utf-8') # Decode the first n entries of the bytes object to a string
+                print("last.fm returned data (first %d chars): %s..." % (n, dataStr))
+            except:
+                print("Unexpected error:", sys.exc_info()[0])
 
 
         lfm = self.get_lastfm_instance()
         tracks = lfm.getLovedTracksByUrlData(data_bytes)
-        failedTracks = []
-        for track in tracks:
-            print("%s - %s" %(track['artist'], track['name']))
-            if self.updateRBRating(track) == True:
-                pass
-                #track['updated'] = True
+        self._lovedTracks.extend(tracks)
+
+        assumedMorePages = len(tracks) == lfm.trackLimit
+        if assumedMorePages == True:
+            self.import_lovedtracks()
+        else:
+            failedTracks = []
+            for track in self._lovedTracks:
+                if self.verbose:
+                    print("%s - %s" %(track['artist'], track['name']))
+                if self.updateRBRating(track) == True:
+                    pass
+                    #track['updated'] = True
+                else:
+                    failedTracks.append(track)
+                    #track['updated'] = False
+            print("Imported %d of %d loved tracks from last.fm to Rhythmbox DB (marked with 5 stars)" % (len(self._lovedTracks) - len(failedTracks), len(self._lovedTracks)))
+
+            if self.verbose:
+                print("%d of %d tracks could not be found in Rhythmbox DB: %s" % ( len(failedTracks), len(self._lovedTracks), failedTracks ) )
             else:
-                failedTracks.append(track)
-                #track['updated'] = False
-        print("Imported %d of %d loved tracks at last.fm to Rhythmbox (marked with 5 stars)" %(len(tracks)-len(failedTracks), len(tracks)))
-        print("%d tracks could not be found in Rythmbox DB: %s" % ( len(failedTracks), failedTracks ) )
+                print("%d of %d tracks could not be found in Rhythmbox DB" % ( len(failedTracks), len(self._lovedTracks) ) )
+            self._lovedTracks = []
+            self._page = 0
 
 
 
@@ -137,7 +164,8 @@ class LastfmSyncLovedTracksPlugin(GObject.Object, Peas.Activatable):
             #entry_artist = db.entry_get_string_(entry, RB.RhythmDBPropType.ARTIST)
             entry_artist = entry.get_string(RB.RhythmDBPropType.ARTIST)
             entry_rating = entry.get_double(RB.RhythmDBPropType.RATING)
-            print("- Artist: '%s', Name: '%s', Rating: '%d'" %(entry_artist, entry_title, entry_rating))
+            if self.verbose:
+                print("- Artist: '%s', Name: '%s', Rating: '%d'" %(entry_artist, entry_title, entry_rating))
             #db.set(entry, rhythmdb.PROP_RATING, float(0))
             db.entry_set(entry, RB.RhythmDBPropType.RATING, float(0))
         db.commit()
@@ -150,7 +178,7 @@ class LastfmSyncLovedTracksPlugin(GObject.Object, Peas.Activatable):
         db = shell.props.db
 
         query = GLib.PtrArray()
-        db.query_append_params(query, RB.RhythmDBQueryType.FUZZY_MATCH, RB.RhythmDBPropType.ARTIST_FOLDED, track['artist']) # use str(..) for the query value if byte literals are passed (e.g. b'foo') otherwise segmentation fault
+        db.query_append_params(query, RB.RhythmDBQueryType.FUZZY_MATCH, RB.RhythmDBPropType.ARTIST_FOLDED, track['artist'])  # use str(..) for the query value if byte literals are passed (e.g. b'foo') otherwise segmentation fault
         db.query_append_params(query, RB.RhythmDBQueryType.FUZZY_MATCH, RB.RhythmDBPropType.TITLE_FOLDED, track['name'])
         
         query_model = RB.RhythmDBQueryModel.new_empty(db)
@@ -158,10 +186,12 @@ class LastfmSyncLovedTracksPlugin(GObject.Object, Peas.Activatable):
         #print(track['name'] )
         #print("updateRBRating: query executing for '%s' - '%s'..."  %( track['artist'], track['name'] ))
         db.do_full_query_parsed(query_model, query)
-        print("updateRBRating: query finished")
+        if self.verbose:
+            print("updateRBRating: query finished")
         
         entries = [row[0] for row in query_model]
-        print("Found %d entries in RhythmDB with search for [Artist: '%s', Name: '%s']:" %(len(entries), track['artist'], track['name']))
+        if self.verbose:
+            print("Found %d entries in RhythmDB with search for [Artist: '%s', Name: '%s']:" %(len(entries), track['artist'], track['name']))
         
         #print("Found %d entries in RhythmDB with search for [Artist: '%s', Name: '%s']:" %(len(query_model), track['artist'], track['name']))
         for treerow in query_model: 
@@ -170,7 +200,8 @@ class LastfmSyncLovedTracksPlugin(GObject.Object, Peas.Activatable):
             entry_title = entry.get_string(RB.RhythmDBPropType.TITLE)
             entry_artist = entry.get_string(RB.RhythmDBPropType.ARTIST)
             entry_rating = entry.get_double(RB.RhythmDBPropType.RATING)
-            print("- Give loved track 5* rating: Artist: '%s', Name: '%s', Rating: '%d'" %(entry_artist, entry_title, entry_rating))
+            if self.verbose:
+                print("- Give loved track 5* rating: Artist: '%s', Name: '%s', Rating: '%d'" %(entry_artist, entry_title, entry_rating))
             db.entry_set(entry, RB.RhythmDBPropType.RATING, float(5))
             db.commit()
             return True
