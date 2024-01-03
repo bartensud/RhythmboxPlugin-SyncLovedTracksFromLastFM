@@ -1,5 +1,6 @@
 from gi.repository import GObject, Peas, Gio, GLib
 from gi.repository import RB
+from gi.repository import Gdk
 import rb
 from net.elektronengehirn.LastFM import *
 
@@ -8,13 +9,18 @@ from ConfigurePluginDialog import ConfigurePluginDialog
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
 
+
 class LastfmSyncLovedTracksPlugin(GObject.Object, Peas.Activatable):
+
     __gtype_name = 'LastfmSyncLovedTracksPlugin'
     object = GObject.property(type=GObject.GObject)
     verbose = False
     _lastfm = None
-    _lovedTracks = None
     _page = 0
+    _lovedTracks = None
+    _lovedTracks_processingSucceeded = None
+    _lovedTracks_processingFailed = None
+    _importOngoing = 0  # if > 0 then 1 overall import process is ongoing
 
     def __init__(self):
         GObject.Object.__init__(self)
@@ -72,10 +78,20 @@ class LastfmSyncLovedTracksPlugin(GObject.Object, Peas.Activatable):
         return self._lastfm
 
     def execute(self, action, parameter, shell):
+        print("Import of loved tracks from last.fm triggered.")
+        if self._importOngoing > 0:
+            print("A previously triggered import of loved tracks is still ongoing. Do nothing.")
+            return
+
+
         if (len(self._lovedTracks) > 0) or (self._page != 0):
-            print("WARNING: Synchronization of loved tracks from last.fm started but there seem still not properlay finished items. User might have started quickly several times or there's a bug...")
-        self._lovedTracks = []
+            print("WARNING: Synchronization of loved tracks from last.fm started but there seem still not properly finished items. User might have started quickly several times or there's a bug...")
+        self._importOngoing = 1
         self._page = 0
+        self._lovedTracks = []
+        self._lovedTracks_processingSucceeded = []
+        self._lovedTracks_processingFailed = []
+
         if self.settings['lastfm-user-name']:
             if self.settings['remove-five-star-ratings']:
                 self.removeRBRatings(5)
@@ -83,6 +99,7 @@ class LastfmSyncLovedTracksPlugin(GObject.Object, Peas.Activatable):
 
 
     def import_lovedtracks(self):
+        self._importOngoing += 1
         lfm = self.get_lastfm_instance()
         self._page += 1
         url = lfm.buildLovedTracksUrl(self.settings['lastfm-user-name'], self._page)
@@ -91,6 +108,7 @@ class LastfmSyncLovedTracksPlugin(GObject.Object, Peas.Activatable):
         loader.get_url(url, self.import_lovedtracks_mycallback)
 
     def import_lovedtracks_mycallback(self, data_bytes): # data is of type 'bytes'
+        self._importOngoing -= 1
         if data_bytes is None:
             print("last.fm query for loved tracks returned nothing")
             #self.search_next()
@@ -113,25 +131,53 @@ class LastfmSyncLovedTracksPlugin(GObject.Object, Peas.Activatable):
         if assumedMorePages == True:
             self.import_lovedtracks()
         else:
-            failedTracks = []
-            for track in self._lovedTracks:
-                if self.verbose:
-                    print("%s - %s" %(track['artist'], track['name']))
-                if self.updateRBRating(track) == True:
-                    pass
-                    #track['updated'] = True
-                else:
-                    failedTracks.append(track)
-                    #track['updated'] = False
-            print("Imported %d of %d loved tracks from last.fm to Rhythmbox DB (marked with 5 stars)" % (len(self._lovedTracks) - len(failedTracks), len(self._lovedTracks)))
+            # Find and update loved tracks with 5 star rating
+            Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.__idle_cb, "No data")
 
-            if self.verbose:
-                print("%d of %d tracks could not be found in Rhythmbox DB: %s" % ( len(failedTracks), len(self._lovedTracks), failedTracks ) )
-            else:
-                print("%d of %d tracks could not be found in Rhythmbox DB" % ( len(failedTracks), len(self._lovedTracks) ) )
-            self._lovedTracks = []
-            self._page = 0
 
+    def __idle_cb(self, data):
+        finished = self.updateRBRatingsTrackByTrack()
+        if not finished:
+            return True
+
+        # finish and cleanup
+        count_lovedTracks_processingSucceeded = len(self._lovedTracks_processingSucceeded)
+        count_lovedTracks_processingFailed = len(self._lovedTracks_processingFailed)
+        count_lovedTracks = count_lovedTracks_processingSucceeded + count_lovedTracks_processingFailed
+        print("Imported %d of %d loved tracks from last.fm to Rhythmbox DB (marked with 5 stars)" % ( count_lovedTracks_processingSucceeded, count_lovedTracks ))
+
+        if self.verbose:
+            print("%d of %d tracks could not be found in Rhythmbox DB: %s" % ( count_lovedTracks_processingFailed, count_lovedTracks, self._lovedTracks_processingFailed ))
+        else:
+            print("%d of %d tracks could not be found in Rhythmbox DB" % ( count_lovedTracks_processingFailed, count_lovedTracks ))
+        self._lovedTracks = []
+        self._page = 0
+
+        self._importOngoing -= 1
+        if self._importOngoing != 0:
+            print("WARNING: Import finished but '_importOngoing' still greater than 0: %d" % (self._importOngoing) )
+
+        return False
+
+
+    def updateRBRatingsTrackByTrack(self):
+        """
+        Gets one track from loved tracks and tries to update it in Rhythmbox DB with 5 stars
+        :return: True if finished (all loved tracks processed)
+        """
+        if (len(self._lovedTracks) == 0):
+            return True
+
+        track = self._lovedTracks.pop()
+        if self.verbose:
+            print("%s - %s" % (track['artist'], track['name']))
+
+        if self.updateRBRating(track) == True:
+            self._lovedTracks_processingSucceeded.append(track)
+        else:
+            self._lovedTracks_processingFailed.append(track)
+
+        return (len(self._lovedTracks)==0)
 
 
     #def enable_buttons(self, enabled):

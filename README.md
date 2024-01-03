@@ -50,7 +50,7 @@ dconf reset -f "/org/gnome/rhythmbox/plugins/lastfm-synclovedtracks/"
 
 ## TESTED ENVIRONMENTS
 
-v0.11
+v0.12
 - Rhythmbox 3.4.7 under Ubuntu 23.10
 
 v0.10
@@ -75,13 +75,10 @@ rhythmbox -D syncloved
 
 ## TODO
 - [DONE] Support paging on retrieving loved tracks from last.fm (currently limited to 1000) 
-- Asynchronous processing to avoid blocking of GUI: 
-  - [DONE] Fetch URL for loved tracks from last.fm
-  - Processing of response from last.fm
-- Automatic syncing in background
-- Indicate import progress/status
-- Display some kind of summary of the import or errors (if the configured user doesn't exist for example)
-- User name validation in the config dialog
+- [DONE] Asynchronous processing to avoid blocking of GUI (HTTP request to last.fm, processing response) 
+- Add optional scheduler for automatic syncing in background
+- Display errors (e.g. wrong username in the config dialog, network problems, etc)
+- Display progress/status of synchronization(?)
 - Localization
 
 
