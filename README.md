@@ -52,6 +52,7 @@ dconf reset -f "/org/gnome/rhythmbox/plugins/lastfm-synclovedtracks/"
 
 v0.12
 - Rhythmbox 3.4.7 under Ubuntu 23.10
+- Rhythmbox 3.4.4 under Ubuntu 20.04.6
 
 v0.10
 - Rhythmbox 3.4.7 under Ubuntu 23.10
@@ -64,7 +65,7 @@ v0.10
 Notes: 
 - No incompatible combinations detected (Ubuntu, Rhythmbox) up to now
 - Might also work with Rhythmbox 2.98 and 2.99
-- No other Linux distros tested up to now
+- No other Linux distros than Ubuntu tested up to now
 
 ## DEBUGGING/LOGGING
 If you want to see what's going on, start Rhythmbox from command line with filter for the output of this plugin:
@@ -74,8 +75,8 @@ rhythmbox -D syncloved
 
 
 ## TODO
-- [DONE] Support paging on retrieving loved tracks from last.fm (currently limited to 1000) 
-- [DONE] Asynchronous processing to avoid blocking of GUI (HTTP request to last.fm, processing response) 
+- [DONE v0.12] Support paging on retrieving loved tracks from last.fm (currently limited to 1000) 
+- [DONE v0.12] Asynchronous processing to avoid blocking of GUI (HTTP request to last.fm, processing response) 
 - Add optional scheduler for automatic syncing in background
 - Display errors (e.g. wrong username in the config dialog, network problems, etc)
 - Display progress/status of synchronization(?)
